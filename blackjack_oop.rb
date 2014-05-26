@@ -38,6 +38,7 @@ end
 #//////////////////Player/////////////////////
 
 class Player
+  BLACKJACK_AMOUNT = 21
   attr_reader :info
 
   def initialize(player="The Dealer")
@@ -110,7 +111,7 @@ class Player
 #///////
 
   def bust?
-    if self.value_of_hand > 21
+    if self.value_of_hand > BLACKJACK_AMOUNT
       true
     else
       false
@@ -137,6 +138,7 @@ end
 
 class Game
   attr_accessor :live_deck, :dealer, :players, :gambler
+  MIN_DEALER_HIT = 17
 
   def initialize
     @live_deck
@@ -211,7 +213,7 @@ class Game
 #///////
   def dealer_gamplay
     if self.gambler.bust? == false
-      while self.dealer.value_of_hand < 17
+      while self.dealer.value_of_hand < MIN_DEALER_HIT
         self.dealer.info[:cards]<<live_deck.cards.pop
       end
     end

@@ -35,14 +35,59 @@ class Deck
   end
 end
 
+
+#//////////////////Account/////////////////////
+
+class Account
+  attr_accessor :chips
+  DEFAULT_AMOUNT = 30
+  def initialize
+    @chips = DEFAULT_AMOUNT
+  end
+
+#///////
+
+  def add_value(value_to_add)
+    self.chips += value_to_add.to_i
+  end
+
+#///////
+
+  def lose_value(value_to_lose)
+    self.chips -= value_to_lose.to_i
+  end
+
+#///////
+
+  def max_bet_limit?
+    @chips
+  end
+
+  def out_of_money?
+    if self.chips == 0
+      true
+    else
+      false
+    end
+  end
+
+#///////
+
+end
+
+
+
 #//////////////////Player/////////////////////
 
 class Player
   BLACKJACK_AMOUNT = 21
   attr_reader :info
+  attr_accessor :account, :bet
 
   def initialize(player="The Dealer")
     @info={name:player, cards: []}
+    @account = Account.new
+    @bet = 0
   end
 
 #///////
@@ -87,6 +132,14 @@ class Player
     end
   end
 
+  def ace_to_eleven
+    info[:cards].each do |a|
+      if (a.name == 'Ace' && a.value == 1)
+        a.value=(11)
+        break
+      end
+    end
+  end
 #///////
 
   def dealing_with_aces
@@ -95,6 +148,7 @@ class Player
       say("You have an Ace so you can re-choose the value! Would you like to value it as an 11 or as a 1? Type an '11' or '1'")
       while ace = gets.chomp
         if ace == "11"
+          ace_to_eleven
           i+=1
           break
         elsif ace == "1"
@@ -117,7 +171,34 @@ class Player
       false
     end
   end
+
 #///////
+
+  def prompt_bet
+    say("How much would you like to wager? You have #{self.account.chips} to wager")
+    while self.bet = gets.chomp
+      if self.bet.to_i>account.max_bet_limit?
+        puts("You can't bet that much!!!!!!!! Enter an amount less than or equal to #{account.max_bet_limit?}.")
+      else
+        break
+      end
+    end
+    puts
+    puts
+  end
+
+#///////
+
+  def win_money
+    self.account.add_value(self.bet)
+  end
+
+#///////
+
+  def lose_money
+    self.account.lose_value(self.bet)
+  end
+
 end
 
 #//////////////////Dealer/////////////////////
@@ -161,6 +242,7 @@ class Game
   #///////
 
   def first_deal
+    gambler.prompt_bet
     @live_deck = Deck.new
     i = 0
     while i < self.players.length
@@ -221,7 +303,7 @@ class Game
 
 #///////
 
-  def final_message
+  def final_showem
     puts
     puts "---------------------------------------------------"
     puts
@@ -229,18 +311,22 @@ class Game
     if self.gambler.bust?
       puts("----You have #{self.gambler.value_of_hand}----")
       say("FUUUUUUUUUUUUUUUU #{self.gambler.info[:name]}, YOU BUSTED! I'm not surprised")
+      gambler.lose_money
     elsif self.dealer.bust?
       self.show_cards_end_game
       puts("----You have #{self.gambler.value_of_hand}, The Dealer has #{self.dealer.value_of_hand}----")
-      say("The Dealer Busted, You WINNNNNNNNNNN")
+      say("The Dealer Busted, You WINNNNNNNNNNN #{gambler.bet}")
+      gambler.win_money
     elsif self.gambler.value_of_hand > self.dealer.value_of_hand
       self.show_cards_end_game
       puts("----You have #{self.gambler.value_of_hand}, The Dealer has #{self.dealer.value_of_hand}----")
-      say("YOU WIN!!!!!!!!!!!!!! You win nothing because I haven't added betting functionality to this program.")
+      say("YOU WIN!!!!!!!!!!!!!! You winnnnnnnnnn #{gambler.bet}.")
+      gambler.win_money
     else
       self.show_cards_end_game
       puts("----You have #{self.gambler.value_of_hand}, The Dealer has #{self.dealer.value_of_hand}----")
       say("You LOSSSSSEEEEEEEEEEEEEE")
+      gambler.lose_money
     end
   end
 
@@ -253,6 +339,13 @@ class Game
         a.info[:cards].clear
       end
       i+=1
+    end
+  end
+
+  def check_player_account
+    if gambler.account.out_of_money?
+      puts("GAME OVER!!! YOU'RE OUT OF MONEY!!!!!! GOOD LUCK NEXT TIME")
+      exit
     end
   end
 
@@ -269,8 +362,9 @@ class Game
       self.show_cards_during_game
       self.hit_or_stay
       self.dealer_gamplay
-      self.final_message
+      self.final_showem
       self.clear_hands
+      self.check_player_account
     say("Would you like to play again? 'Y' or 'N'")
       while play = gets.chomp
         if play == "Y" || play == "y"
